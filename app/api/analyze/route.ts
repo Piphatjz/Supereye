@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const base =
       process.env.FLASK_API_BASE ||
       process.env.NEXT_PUBLIC_API_BASE || // เผื่อคุณเคยตั้งไว้
-      "http://127.0.0.1:8000"
+      "https://a60032d9c210.ngrok-free.app"
 
     // ยิงไปยัง Flask
     const res = await fetch(`${base}/predict`, {
