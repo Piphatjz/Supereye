@@ -266,7 +266,7 @@ export default function EyeDiseaseAnalyzer() {
                         <div className="flex items-center gap-2">
                           <Progress value={analysisResult.confidence} className="flex-1" />
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {analysisResult.confidence}%
+                            {analysisResult.confidence*100}%
                           </span>
                         </div>
                       </div>
