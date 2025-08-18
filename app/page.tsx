@@ -264,9 +264,19 @@ export default function EyeDiseaseAnalyzer() {
                       <div className="space-y-2">
                         <p className="text-sm text-gray-600 dark:text-gray-400">{t("results.confidence")}</p>
                         <div className="flex items-center gap-2">
-                          <Progress value={analysisResult.confidence} className="flex-1" />
+                          <Progress
+                            value={
+                              analysisResult.confidence > 1
+                                ? analysisResult.confidence
+                                : analysisResult.confidence * 100
+                            }
+                            className="flex-1"
+                          />
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {analysisResult.confidence*100}%
+                            {analysisResult.confidence > 1
+                              ? analysisResult.confidence
+                              : Math.round(analysisResult.confidence * 100)}
+                            %
                           </span>
                         </div>
                       </div>
@@ -338,7 +348,11 @@ export default function EyeDiseaseAnalyzer() {
                               </Badge>
                             </div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {t("history.confidence")}: {item.result.confidence}%
+                              {t("history.confidence")}:{" "}
+                              {item.result.confidence > 1
+                                ? item.result.confidence
+                                : Math.round(item.result.confidence * 100)}
+                              %
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-500">
                               {item.timestamp.toLocaleString()}
