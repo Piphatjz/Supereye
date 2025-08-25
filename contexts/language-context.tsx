@@ -16,9 +16,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const translations = {
   th: {
     // Navbar
-    "nav.analyzeImage": "วิเคราะห์ภาพ",
+    
     "nav.analysisHistory": "ประวัติการวิเคราะห์",
-    "nav.diseaseInfo": "ข้อมูลโรค",
+    
     "nav.credits": "เครดิต",
     "nav.profile": "โปรไฟล์",
     "nav.settings": "ตั้งค่า",

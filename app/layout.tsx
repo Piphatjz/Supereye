@@ -4,6 +4,7 @@ import "./globals.css"
 import { LanguageProvider } from "@/contexts/language-context"
 import { ThemeProvider } from "@/contexts/theme-context"
 
+
 export const metadata: Metadata = {
   title: "EyeAnalyzer - AI-Powered Eye Disease Detection",
   description:

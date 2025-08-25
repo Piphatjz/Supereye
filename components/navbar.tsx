@@ -44,7 +44,7 @@ export default function Navbar() {
               <Eye className="w-6 h-6 text-white" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">EyeAnalyzer</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Supereye ai</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">AI-Powered Eye Disease Detection</p>
             </div>
           </div>

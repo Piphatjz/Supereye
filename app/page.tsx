@@ -1,459 +1,365 @@
-"use client"
 
-import type React from "react"
+'use client'
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, Heart, Home, User, CreditCard, History, Eye, Zap, Users, TrendingUp } from "lucide-react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, Eye, Activity, Clock, CheckCircle, AlertTriangle, Info, Heart } from "lucide-react"
-import Navbar from "@/components/navbar"
-import { useLanguage } from "@/contexts/language-context"
+// Mock data for demonstration
+const mockHistory = [
+  
+];
 
-interface AnalysisResult {
-  disease: string
-  confidence: number
-  severity: "low" | "medium" | "high"
-  description: string
-  recommendations: string[]
-}
+const mockCredits = 5;
 
 export default function EyeDiseaseAnalyzer() {
-  const { t } = useLanguage()
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
-  const [analysisHistory, setAnalysisHistory] = useState<
-    Array<{
-      id: string
-      image: string
-      result: AnalysisResult
-      timestamp: Date
-    }>
-  >([])
+  const [activeTab, setActiveTab] = useState("home");
+  const [analysisHistory, setAnalysisHistory] = useState(mockHistory);
+  const [credits, setCredits] = useState(mockCredits);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string)
-        setAnalysisResult(null)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const analyzeImage = async () => {
-    if (!selectedImage) return
-
-    setIsAnalyzing(true)
-
-    try {
-      // Create FormData to send image to API
-      const formData = new FormData()
-
-      // Convert data URL to File object
-      const response = await fetch(selectedImage)
-      const blob = await response.blob()
-      const file = new File([blob], "retinal-image.jpg", { type: "image/jpeg" })
-      formData.append("image", file)
-
-      // Call your API
-      const apiResponse = await fetch("/api/analyze", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!apiResponse.ok) {
-        throw new Error("Analysis failed")
-      }
-
-      const result: AnalysisResult = await apiResponse.json()
-
-      setAnalysisResult(result)
-      setAnalysisHistory((prev) => [
-        {
-          id: Date.now().toString(),
-          image: selectedImage,
-          result: result,
-          timestamp: new Date(),
-        },
-        ...prev,
-      ])
-      setIsAnalyzing(false)
-    } catch (error) {
-      console.error("Analysis error:", error)
-      setIsAnalyzing(false)
-      // You might want to show an error message to the user
-      alert(t("analysis.error") || "Analysis failed. Please try again.")
-    }
-  }
-
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity) => {
     switch (severity) {
       case "low":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
       case "high":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
-  }
+  };
 
-  const getSeverityIcon = (severity: string) => {
+  const getSeverityText = (severity) => {
     switch (severity) {
       case "low":
-        return <CheckCircle className="w-4 h-4" />
+        return "ความเสี่ยงต่ำ";
       case "medium":
-        return <AlertTriangle className="w-4 h-4" />
+        return "ความเสี่ยงปานกลาง";
       case "high":
-        return <AlertTriangle className="w-4 h-4" />
+        return "ความเสี่ยงสูง";
       default:
-        return <Info className="w-4 h-4" />
+        return severity;
     }
-  }
+  };
 
-  const getSeverityText = (severity: string) => {
-    switch (severity) {
-      case "low":
-        return t("results.lowLevel")
-      case "medium":
-        return t("results.mediumLevel")
-      case "high":
-        return t("results.highLevel")
-      default:
-        return severity
-    }
-  }
+  const formatDate = (date) => {
+    return new Intl.DateTimeFormat('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  // Fix hydration error by ensuring consistent date formatting
+  const formatConsistentDate = (date) => {
+    // Ensure the same format is used on server and client
+    return new Intl.DateTimeFormat('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="analyze" className="max-w-6xl mx-auto">
-          <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800">
-            <TabsTrigger
-              value="analyze"
-              className="flex items-center gap-2 data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+      {/* Header */}
+      <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                <Eye className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">Supereye</span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              
+              
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                </div>
+                <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-300">Dr. Piphat</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab("home")}
+              className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
+                activeTab === "home"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
             >
-              <Activity className="w-4 h-4" />
-              {t("nav.analyzeImage")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="flex items-center gap-2 data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900"
+              <Home className="w-4 h-4" />
+              <span>หน้าหลัก</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
+                activeTab === "history"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
             >
-              <Clock className="w-4 h-4" />
-              {t("nav.analysisHistory")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="info"
-              className="flex items-center gap-2 data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900"
-            >
-              <Info className="w-4 h-4" />
-              {t("nav.diseaseInfo")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="credits"
-              className="flex items-center gap-2 data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900"
+              <History className="w-4 h-4" />
+              <span>ประวัติการวิเคราะห์</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab("credits")}
+              className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
+                activeTab === "credits"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
             >
               <Heart className="w-4 h-4" />
-              {t("nav.credits")}
-            </TabsTrigger>
-          </TabsList>
+              <span>เครดิต</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
-          <TabsContent value="analyze" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Image Upload Section */}
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white">{t("upload.title")}</CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">
-                    {t("upload.description")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="image-upload"
-                      />
-                      <label htmlFor="image-upload" className="cursor-pointer">
-                        {selectedImage ? (
-                          <div className="space-y-2">
-                            <img
-                              src={selectedImage || "/placeholder.svg"}
-                              alt="Selected retinal image"
-                              className="max-w-full h-48 object-contain mx-auto rounded-lg"
-                            />
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{t("upload.clickToChange")}</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto" />
-                            <p className="text-gray-600 dark:text-gray-400">{t("upload.clickToSelect")}</p>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-
-                    <Button
-                      onClick={analyzeImage}
-                      disabled={!selectedImage || isAnalyzing}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Activity className="w-4 h-4 mr-2 animate-spin" />
-                          {t("upload.analyzing")}
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-4 h-4 mr-2" />
-                          {t("upload.startAnalysis")}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Analysis Results Section */}
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white">{t("results.title")}</CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">
-                    {t("results.description")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isAnalyzing && (
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <Activity className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-2 animate-spin" />
-                        <p className="text-gray-600 dark:text-gray-400">{t("results.processing")}</p>
-                      </div>
-                      <Progress value={33} className="w-full" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{t("results.pleaseWait")}</p>
-                    </div>
-                  )}
-
-                  {analysisResult && !isAnalyzing && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {analysisResult.disease}
-                        </h3>
-                        <Badge className={getSeverityColor(analysisResult.severity)}>
-                          {getSeverityIcon(analysisResult.severity)}
-                          <span className="ml-1">{getSeverityText(analysisResult.severity)}</span>
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{t("results.confidence")}</p>
-                        <div className="flex items-center gap-2">
-                          <Progress
-                            value={
-                              analysisResult.confidence > 1
-                                ? analysisResult.confidence
-                                : analysisResult.confidence * 100
-                            }
-                            className="flex-1"
-                          />
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {analysisResult.confidence > 1
-                              ? analysisResult.confidence
-                              : Math.round(analysisResult.confidence * 100)}
-                            %
-                          </span>
-                        </div>
-                      </div>
-
-                      <Alert className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                          {analysisResult.description}
-                        </AlertDescription>
-                      </Alert>
-
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{t("results.recommendations")}</h4>
-                        <ul className="space-y-1">
-                          {analysisResult.recommendations.map((rec, index) => (
-                            <li key={index} className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2">
-                              <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-                              {rec}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-
-                  {!selectedImage && !isAnalyzing && (
-                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                      <Eye className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>{t("upload.uploadToStart")}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Home Tab */}
+        {activeTab === "home" && (
+          <div className="space-y-8">
+            <div className="text-center py-12">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                Supereye AI
+              </h1>
+              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
+                เสริมพลังให้แพทย์ด้วยการตรวจคัดกรองโรคตาเบื้องต้นด้วย AI ตรวจพบโรคสำคัญได้เร็ว ลดภาระงาน และปกป้องการมองเห็นของผู้ป่วยในวงกว้าง
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-lg"
+                  onClick={() => window.location.href = '/Batch'}
+                >
+                  เริ่มการวิเคราะห์แบบกลุ่ม
+                </Button>
+                
+              </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="history" className="space-y-4">
-            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            {/* Problem Statement */}
+            <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-gray-900 dark:text-white">{t("history.title")}</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  {t("history.description")}
-                </CardDescription>
+                <CardTitle className="text-2xl text-gray-900 dark:text-white flex items-center gap-2">
+                  <Eye className="w-6 h-6 text-blue-500" />
+                  The Challange
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {analysisHistory.length === 0 ? (
-                  <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>{t("history.noHistory")}</p>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">วิกฤติสุขภาพตาทั่วโลก</h3>
+                    <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                      <li className="flex items-start">
+                        <span className="text-blue-500 mr-2">•</span>
+                        <span>มีผู้คนกว่า 1,000 ล้านคนทั่วโลกที่มีปัญหาการมองเห็น</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-blue-500 mr-2">•</span>
+                        <span>เบาหวานขึ้นตาส่งผลต่อ 1 ใน 3 ของผู้ป่วยเบาหวาน (เกือบ 150 ล้านคน)</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-blue-500 mr-2">•</span>
+                        <span>การเข้าถึงจักษุแพทย์มีข้อจำกัด โดยเฉพาะในพื้นที่ชนบท</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-blue-500 mr-2">•</span>
+                        <span>ต้นทุนการตรวจคัดกรองแบบดั้งเดิมมีราคาสูง</span>
+                      </li>
+                    </ul>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {analysisHistory.map((item) => (
-                      <div
-                        key={item.id}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3"
-                      >
-                        <div className="flex items-start gap-4">
-                          <img
-                            src={item.image || "/placeholder.svg"}
-                            alt="Analyzed image"
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium text-gray-900 dark:text-white">{item.result.disease}</h4>
-                              <Badge className={getSeverityColor(item.result.severity)}>
-                                {getSeverityText(item.result.severity)}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {t("history.confidence")}:{" "}
-                              {item.result.confidence > 1
-                                ? item.result.confidence
-                                : Math.round(item.result.confidence * 100)}
-                              %
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">
-                              {item.timestamp.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">โซลูชันของเรา</h3>
+                    <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                      <li className="flex items-start">
+                        <span className="text-green-500 mr-2">•</span>
+                        <span>การตรวจคัดกรองเรตินาด้วย AI โดยใช้ Convolutional Neural Networks</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-green-500 mr-2">•</span>
+                        <span>ตรวจจับโรคตา 4 ชนิดหลัก: ตาปกติ ต้อกระจก เบาหวานขึ้นตา ต้อหิน</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-green-500 mr-2">•</span>
+                        <span>เข้าถึงได้ผ่านเว็บแอปพลิเคชันและ API</span>
+                      </li>
+                      
+                    </ul>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="info" className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white">{t("disease.diabeticRetinopathy")}</CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Diabetic Retinopathy</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t("disease.diabeticDesc")}</p>
-                  <div className="space-y-2">
-                    <h5 className="font-medium text-gray-900 dark:text-white">{t("disease.symptoms")}</h5>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• {t("disease.symptoms") === "Symptoms:" ? "Blurred vision" : "มองเห็นภาพเบลอ"}</li>
-                      <li>• {t("disease.symptoms") === "Symptoms:" ? "Dark spots or floaters" : "เห็นจุดดำลอยตา"}</li>
-                      <li>• {t("disease.symptoms") === "Symptoms:" ? "Reduced night vision" : "การมองเห็นในที่มืดลดลง"}</li>
-                    </ul>
+            {/* Features */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Early Detection</h3>
+                  <p className="text-gray-600 dark:text-gray-400">มีการวินิจฉัยเบื้องต้นที่รวดเร็ว เพื่อการรักษาที่มีประสิทธิภาพสูงสุด</p>
                 </CardContent>
               </Card>
-
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white">{t("disease.glaucoma")}</CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Glaucoma</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t("disease.glaucomaDesc")}</p>
-                  <div className="space-y-2">
-                    <h5 className="font-medium text-gray-900 dark:text-white">{t("disease.symptoms")}</h5>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• {t("disease.symptoms") === "Symptoms:" ? "Reduced peripheral vision" : "สายตาข้างลดลง"}</li>
-                      <li>• {t("disease.symptoms") === "Symptoms:" ? "Eye pain, headaches" : "ปวดตา ปวดหัว"}</li>
-                      <li>
-                        • {t("disease.symptoms") === "Symptoms:" ? "Seeing halos around lights" : "เห็นรัศมีรอบแสงไฟ"}
-                      </li>
-                    </ul>
+              
+              <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">ลดภาระจักษุแพทย์</h3>
+                  <p className="text-gray-600 dark:text-gray-400">ทำหน้าที่เป็นผู้ช่วยจักษุแพทย์ เพื่อความรวดเร็ว ลดภาระงานและจัดลำดับความสำคัญของผู้ป่วย ทำให้การรักษาผู้ป่วยมีจำนวนมากยิ่งขึ้น</p>
                 </CardContent>
               </Card>
-
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white">{t("disease.macularDegeneration")}</CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Macular Degeneration</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t("disease.macularDesc")}</p>
-                  <div className="space-y-2">
-                    <h5 className="font-medium text-gray-900 dark:text-white">{t("disease.symptoms")}</h5>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>
-                        • {t("disease.symptoms") === "Symptoms:" ? "Blurred central vision" : "มองเห็นภาพเบลอตรงกลาง"}
-                      </li>
-                      <li>
-                        • {t("disease.symptoms") === "Symptoms:" ? "Straight lines appear curved" : "เส้นตรงดูคดโค้ง"}
-                      </li>
-                      <li>• {t("disease.symptoms") === "Symptoms:" ? "Colors appear faded" : "สีดูจางลง"}</li>
-                    </ul>
+              
+              <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white">{t("disease.normal")}</CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Normal</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t("disease.normalDesc")}</p>
-                  <div className="space-y-2">
-                    <h5 className="font-medium text-gray-900 dark:text-white">{t("disease.care")}</h5>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• {t("disease.care") === "Care:" ? "Annual eye examination" : "ตรวจตาประจำปี"}</li>
-                      <li>• {t("disease.care") === "Care:" ? "Protect from bright sunlight" : "ป้องกันแสงแดดจัด"}</li>
-                      <li>
-                        • {t("disease.care") === "Care:" ? "Eat foods rich in Vitamin A" : "รับประทานอาหารที่มีวิตามิน A"}
-                      </li>
-                    </ul>
-                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">...</h3>
+                  <p className="text-gray-600 dark:text-gray-400">...</p>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
 
-          
-        </Tabs>
-      </div>
+            {/* Recent Analysis Preview */}
+            <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+              <CardHeader>
+                <CardTitle className="text-2xl text-gray-900 dark:text-white">การวิเคราะห์ล่าสุด</CardTitle>
+                <CardDescription>ผลการวินิจฉัยล่าสุดจากผู้ป่วยของคุณ</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {analysisHistory.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 dark:text-gray-400">ยังไม่มีประวัติการวิเคราะห์</p>
+                    </div>
+                  ) : (
+                    analysisHistory.slice(0, 2).map((item) => (
+                      <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <img
+                          src={item.image}
+                          alt="ภาพเรตินา"
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-white">{item.result.disease}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{item.result.description}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{formatConsistentDate(new Date(item.timestamp))}</p>
+                        </div>
+                        <Badge className={getSeverityColor(item.result.severity)}>
+                          {getSeverityText(item.result.severity)}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === "history" && (
+          <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+            <CardHeader>
+              <CardTitle className="text-2xl text-gray-900 dark:text-white">ประวัติการวิเคราะห์</CardTitle>
+              <CardDescription>ดูผลการวินิจฉัยทั้งหมดในอดีต</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysisHistory.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">ไม่มีประวัติการวิเคราะห์</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">เริ่มต้นโดยการอัปโหลดภาพเรตินาเพื่อการวิเคราะห์</p>
+                  <Button onClick={() => window.location.href = '/Batch'}>
+                    อัปโหลดภาพ
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {analysisHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-start gap-6">
+                        <img
+                          src={item.image}
+                          alt="ภาพที่วิเคราะห์"
+                          className="w-32 h-32 rounded-lg object-cover"
+                        />
+                        <div className="flex-1 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <h4 className="text-xl font-semibold text-gray-900 dark:text-white">{item.result.disease}</h4>
+                            <Badge className={`px-3 py-1 text-sm ${getSeverityColor(item.result.severity)}`}>
+                              {getSeverityText(item.result.severity)}
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-gray-600 dark:text-gray-400">{item.result.description}</p>
+                          
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-500">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span>{formatConsistentDate(new Date(item.timestamp))}</span>
+                            <span className="mx-2">•</span>
+                            <span>ความมั่นใจ: {item.result.confidence}%</span>
+                          </div>
+                          
+                          <div>
+                            <h5 className="font-medium text-gray-900 dark:text-white mb-2">คำแนะนำ:</h5>
+                            <ul className="space-y-1">
+                              {item.result.recommendations.map((rec, index) => (
+                                <li key={index} className="flex items-start">
+                                  <span className="text-blue-500 mr-2">•</span>
+                                  <span className="text-gray-600 dark:text-gray-400">{rec}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Credits Tab */}
+        {activeTab === "credits" && (
+          <div className="space-y-6">
+
+            
+            
+          </div>
+        )}
+      </main>
     </div>
-  )
+  );
 }
