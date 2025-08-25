@@ -154,7 +154,7 @@ export default function EyeDiseaseAnalyzer() {
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-lg"
                   onClick={() => window.location.href = '/Batch'}
                 >
-                  เริ่มการวิเคราะห์แบบกลุ่ม
+                  เริ่มการวิเคราะห์
                 </Button>
                 
               </div>
