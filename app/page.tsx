@@ -39,7 +39,7 @@ const teamMembers = [
   },
   {
     id: 4,
-    name: "นาย ธีรวุฒิ",
+    name: "นาย ธีรวุฒิ จันทะพันธ์",
     role: "ครูที่ปรึกษา",
     image: "/A.png"
   }
@@ -214,7 +214,7 @@ export default function EyeDiseaseAnalyzer() {
               <CardHeader>
                 <CardTitle className="text-xl md:text-2xl text-gray-900 dark:text-white flex items-center gap-2">
                   <Eye className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
-                  ความท้าทาย
+                  The Challent
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -264,8 +264,8 @@ export default function EyeDiseaseAnalyzer() {
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">การตรวจจับแต่เนื่องจากต้น</h3>
-                  <p className="text-gray-600 dark:text-gray-400">ตรวจพบความผิดปกติเร็วขึ้น → รักษาได้ทันท่วงที ลดโอกาสสูญเสียการมองเห็นถาวร</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">รักษาผู้ป่วยได้ทันเวลา</h3>
+                  <p className="text-gray-600 dark:text-gray-400">ตรวจได้เร็วมากขึ้น ทำให้รักษาได้ทันเวลา ลดความเสี่ยงการสูญเสียการมองเห็นถาวร</p>
                 </CardContent>
               </Card>
               
@@ -284,8 +284,8 @@ export default function EyeDiseaseAnalyzer() {
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">ปรับขนาดได้ & ประหยัด</h3>
-                  <p className="text-gray-600 dark:text-gray-400">สามารถนำไปใช้ในพื้นที่ที่มีทรัพยากรจำกัดด้วยอุปกรณ์ขั้นต่ำ</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Future Plan</h3>
+                  <p className="text-gray-600 dark:text-gray-400">ใช้ Grad-CAM แสดงตำแหน่งที่สำคัญ + Rule-based Explanation อธิบายลักษณะผิดปกติ</p>
                 </CardContent>
               </Card>
             </div>
