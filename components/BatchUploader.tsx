@@ -51,8 +51,8 @@ function toCSV(rows: Array<Record<string, any>>) {
 }
 
 // ---------- Endpoint 2 ตัว (รูปทั่วไป / DICOM) ----------
-const IMG_API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/predict';
-const DCM_API = process.env.NEXT_PUBLIC_API_URL_DICOM || 'http://localhost:8000/predict-dicom';
+const IMG_API = process.env.NEXT_PUBLIC_API_URL || 'https://788a3a173083.ngrok-free.app/predict';
+const DCM_API = process.env.NEXT_PUBLIC_API_URL_DICOM || 'https://788a3a173083.ngrok-free.app/predict-dicom';
 
 // ---------- ยิง API โดยเลือก URL ตามชนิดไฟล์ ----------
 async function predictOne(file: File, signal?: AbortSignal): Promise<ApiResponse> {
