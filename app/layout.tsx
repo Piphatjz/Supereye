@@ -6,9 +6,9 @@ import { ThemeProvider } from "@/contexts/theme-context"
 
 
 export const metadata: Metadata = {
-  title: "EyeAnalyzer - AI-Powered Eye Disease Detection",
+  title: "Supereye ai|เสริมพลังให้แพทย์ด้วยการตรวจคัดกรองโรคตาเบื้องต้นด้วย AI",
   description:
-    "AI-powered system for analyzing and classifying eye diseases from retinal images using advanced technology",
+    "เสริมพลังให้แพทย์ด้วยการตรวจคัดกรองโรคตาเบื้องต้นด้วย AI",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
