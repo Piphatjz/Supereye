@@ -27,10 +27,9 @@ type Job = {
   ms?: number;
   result?: ApiResponse;
   error?: string;
-  preview?: string; // data URL preview (ภาพทั่วไปเท่านั้น)
+  preview?: string;
 };
 
-// ---------- Helper: ตรวจว่าเป็นไฟล์ DICOM ไหม ----------
 function isDicomFile(file: File) {
   const name = (file.name || '').toLowerCase();
   const type = (file.type || '').toLowerCase();
@@ -50,11 +49,9 @@ function toCSV(rows: Array<Record<string, any>>) {
   return [headers.map(esc).join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n');
 }
 
-// ---------- Endpoint 2 ตัว (รูปทั่วไป / DICOM) ----------
 const IMG_API = process.env.NEXT_PUBLIC_API_URL || 'https://788a3a173083.ngrok-free.app/predict';
 const DCM_API = process.env.NEXT_PUBLIC_API_URL_DICOM || 'https://788a3a173083.ngrok-free.app/predict-dicom';
 
-// ---------- ยิง API โดยเลือก URL ตามชนิดไฟล์ ----------
 async function predictOne(file: File, signal?: AbortSignal): Promise<ApiResponse> {
   const endpoint = isDicomFile(file) ? DCM_API : IMG_API;
   const fd = new FormData();
@@ -70,7 +67,6 @@ async function predictOne(file: File, signal?: AbortSignal): Promise<ApiResponse
   return res.json();
 }
 
-// แปลงความมั่นใจให้เป็น 0..1 (เผื่อกรณีอื่นในระบบ)
 function toProb01(x?: number) {
   if (x == null) return undefined;
   return x > 1 ? Math.max(0, Math.min(1, x / 100)) : x;
@@ -93,7 +89,6 @@ export default function BatchUploader() {
       status: 'queued',
     }));
 
-    // ภาพทั่วไป -> ทำ preview; DICOM -> ไม่ทำ preview
     list.forEach(j => {
       if (isDicomFile(j.file)) {
         setJobs(prev => prev.map(p => (p.id === j.id ? { ...p, preview: undefined } : p)));
@@ -149,7 +144,6 @@ export default function BatchUploader() {
         const result = await predictOne(job.file, ac.signal);
         const finishedAt = performance.now();
 
-        // อัปเดตสถานะงาน
         update(job.id, {
           status: 'done',
           finishedAt,
@@ -157,7 +151,6 @@ export default function BatchUploader() {
           result,
         });
 
-        // บันทึกประวัติ
         try {
           const confidencePct = Math.round((result?.top1?.prob ?? 0) * 100);
 
@@ -246,49 +239,56 @@ export default function BatchUploader() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="w-full max-w-7xl mx-auto px-4 py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
-        <div className="text-center mb-12 relative">
+        <div className="text-center mb-8 sm:mb-12 relative">
           <div className="absolute top-0 right-0">
             <Button
               onClick={() => (window.location.href = '/')}
-              className="bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 font-medium shadow-sm rounded-lg px-4 py-2 flex items-center gap-2 transition-all duration-200"
+              className="bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 font-medium shadow-sm rounded-lg px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 transition-all duration-200 text-sm"
             >
-              <Home className="w-4 h-4" />
+              <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>กลับสู่หน้าหลัก</span>
             </Button>
           </div>
 
           <div className="flex justify-center">
-            <Image src="/logo.png" width={320} height={320} alt="Supereye AI Logo" className="max-w-full h-auto" />
+            <Image 
+              src="/logo.png" 
+              width={240} 
+              height={240} 
+              alt="Supereye AI Logo" 
+              className="max-w-full h-auto"
+              priority
+            />
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Upload Panel */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">อัปโหลดภาพ</h2>
-              <p className="text-gray-600">เลือกภาพหลายภาพเพื่อวิเคราะห์แบบกลุ่ม</p>
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 p-5 sm:p-6 md:p-8">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5">อัปโหลดภาพ</h2>
+              <p className="text-gray-600 text-sm sm:text-base">เลือกภาพหลายภาพเพื่อวิเคราะห์แบบกลุ่ม</p>
             </div>
 
             {/* File Upload */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">เลือกภาพ</label>
+            <div className="mb-6 sm:mb-8">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5">เลือกภาพ</label>
               <div className="relative">
                 <input
                   type="file"
                   accept="image/*,.dcm,.dicom"
                   multiple
                   onChange={e => onPickFiles(e.target.files)}
-                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-blue-400 transition-colors file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="w-full p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-xl sm:rounded-2xl cursor-pointer hover:border-blue-400 transition-colors file:mr-3 sm:file:mr-4 file:py-2 sm:file:py-3 file:px-4 sm:file:px-6 file:rounded-lg sm:file:rounded-xl file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
             </div>
 
             {/* Drag & Drop Zone */}
             <div
-              className="mb-8 border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
+              className="mb-6 sm:mb-8 border-2 border-dashed border-gray-300 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
               onDrop={e => {
                 e.preventDefault();
                 onPickFiles(e.dataTransfer?.files ?? null);
@@ -298,7 +298,7 @@ export default function BatchUploader() {
               }}
             >
               <div className="flex flex-col items-center justify-center space-y-3">
-                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -307,26 +307,26 @@ export default function BatchUploader() {
                   />
                 </svg>
                 <div>
-                  <p className="text-lg font-medium text-gray-700">ลากและวางภาพที่นี่</p>
-                  <p className="text-gray-500">หรือคลิกเพื่อเลือกไฟล์</p>
+                  <p className="text-base sm:text-lg font-medium text-gray-700">ลากและวางภาพที่นี่</p>
+                  <p className="text-gray-500 text-sm">หรือคลิกเพื่อเลือกไฟล์</p>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 mb-6">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3 mb-5 sm:mb-6">
               {!isRunning ? (
                 <button
                   onClick={start}
                   disabled={!jobs.some(j => ['queued', 'error', 'canceled'].includes(j.status))}
-                  className="flex-1 min-w-[140px] px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="flex-1 min-w-[120px] sm:min-w-[140px] px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-xl text-sm sm:text-base"
                 >
                   เริ่มการวิเคราะห์
                 </button>
               ) : (
                 <button
                   onClick={cancelAll}
-                  className="flex-1 min-w-[140px] px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="flex-1 min-w-[120px] sm:min-w-[140px] px-4 sm:px-6 py-2.5 sm:py-3 bg-red-500 text-white font-semibold rounded-lg sm:rounded-xl hover:bg-red-600 transition-all duration-200 shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-xl text-sm sm:text-base"
                 >
                   ยกเลิกทั้งหมด
                 </button>
@@ -334,16 +334,16 @@ export default function BatchUploader() {
               <button
                 onClick={clearAll}
                 disabled={isRunning || jobs.length === 0}
-                className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg sm:rounded-xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm sm:text-base"
               >
                 ล้างรายการ
               </button>
               <button
                 onClick={downloadCSV}
                 disabled={doneCount === 0}
-                className="px-6 py-3 bg-green-100 text-green-700 font-semibold rounded-xl hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-green-100 text-green-700 font-semibold rounded-lg sm:rounded-xl hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -356,21 +356,21 @@ export default function BatchUploader() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">{jobs.length}</div>
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-6">
+              <div className="bg-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">{jobs.length}</div>
                 <div className="text-xs text-blue-700 font-medium">ทั้งหมด</div>
               </div>
-              <div className="bg-yellow-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-600">{runningCount}</div>
+              <div className="bg-yellow-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-bold text-yellow-600">{runningCount}</div>
                 <div className="text-xs text-yellow-700 font-medium">กำลังทำงาน</div>
               </div>
-              <div className="bg-green-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-green-600">{doneCount}</div>
+              <div className="bg-green-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-bold text-green-600">{doneCount}</div>
                 <div className="text-xs text-green-700 font-medium">เสร็จสิ้น</div>
               </div>
-              <div className="bg-red-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-red-600">{errorCount}</div>
+              <div className="bg-red-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{errorCount}</div>
                 <div className="text-xs text-red-700 font-medium">ข้อผิดพลาด</div>
               </div>
             </div>
@@ -378,17 +378,17 @@ export default function BatchUploader() {
             {/* Preview Thumbnails */}
             {jobs.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2.5">
                   ตัวอย่าง ({Math.min(jobs.length, 6)} จาก {jobs.length})
                 </h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {jobs.slice(0, 6).map(j => (
-                    <div key={j.id} className="aspect-square bg-gray-100 rounded-xl overflow-hidden border-2 border-gray-200">
+                    <div key={j.id} className="aspect-square bg-gray-100 rounded-lg sm:rounded-xl overflow-hidden border-2 border-gray-200">
                       {j.preview ? (
                         <img src={j.preview} alt={j.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -406,18 +406,18 @@ export default function BatchUploader() {
           </div>
 
           {/* Results Panel */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 p-5 sm:p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">ผลการวิเคราะห์</h2>
-                <p className="text-gray-600">ผลการวิเคราะห์จะแสดงที่นี่</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">ผลการวิเคราะห์</h2>
+                <p className="text-gray-600 text-sm sm:text-base">ผลการวิเคราะห์จะแสดงที่นี่</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {(['all', 'queued', 'running', 'done', 'error'] as const).map(k => (
                   <button
                     key={k}
                     onClick={() => setFilter(k)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                       filter === k ? 'bg-blue-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
@@ -431,16 +431,16 @@ export default function BatchUploader() {
               </div>
             </div>
 
-            <div className="space-y-4 max-h-[600px] overflow-auto pr-2">
+            <div className="space-y-3 sm:space-y-4 max-h-[500px] sm:max-h-[600px] overflow-auto pr-1 sm:pr-2">
               {visibleJobs.map(j => (
-                <div key={j.id} className="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-all duration-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                <div key={j.id} className="border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0">
                       {j.preview ? (
                         <img src={j.preview} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -453,9 +453,9 @@ export default function BatchUploader() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">{j.name}</div>
-                      <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="font-semibold text-gray-900 truncate text-sm sm:text-base">{j.name}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 flex items-center gap-1.5 sm:gap-2">
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         {fmtMs(j.ms)}
@@ -463,7 +463,7 @@ export default function BatchUploader() {
                     </div>
 
                     <div
-                      className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${
+                      className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
                         j.status === 'done'
                           ? 'bg-green-100 text-green-800'
                           : j.status === 'running'
@@ -484,19 +484,19 @@ export default function BatchUploader() {
                   </div>
 
                   {j.result && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2 mb-3">
+                    <div className="mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-gray-100">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5 sm:mb-3">
                         <span className="text-sm font-semibold text-gray-700">ผลการวิเคราะห์:</span>
-                        <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-sm font-bold">
+                        <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-xs sm:text-sm font-bold">
                           {j.result.top1.label}
                         </span>
-                        <span className="text-sm font-mono text-gray-600">({(j.result.top1.prob * 100).toFixed(1)}%)</span>
+                        <span className="text-xs font-mono text-gray-600">({(j.result.top1.prob * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                         {j.result.predictions.slice(0, 4).map((p, i) => (
                           <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
-                            <span className="text-sm text-gray-700 truncate">{p.label}</span>
-                            <span className="text-sm font-mono text-gray-600 ml-2">{(p.prob * 100).toFixed(1)}%</span>
+                            <span className="text-xs sm:text-sm text-gray-700 truncate">{p.label}</span>
+                            <span className="text-xs font-mono text-gray-600 ml-1.5">{(p.prob * 100).toFixed(1)}%</span>
                           </div>
                         ))}
                       </div>
@@ -504,8 +504,8 @@ export default function BatchUploader() {
                   )}
 
                   {j.error && (
-                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="text-sm text-red-800 font-medium mb-1">ข้อผิดพลาด:</div>
+                    <div className="mt-2.5 sm:mt-3 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="text-xs sm:text-sm text-red-800 font-medium mb-1">ข้อผิดพลาด:</div>
                       <div className="text-xs text-red-600 break-all">{j.error}</div>
                     </div>
                   )}
@@ -513,14 +513,14 @@ export default function BatchUploader() {
               ))}
 
               {visibleJobs.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-8 sm:py-12">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">ยังไม่มีผลการวิเคราะห์</h3>
-                  <p className="text-gray-500">อัปโหลดภาพและเริ่มการวิเคราะห์เพื่อดูผลลัพธ์ที่นี่</p>
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1.5">ยังไม่มีผลการวิเคราะห์</h3>
+                  <p className="text-gray-500 text-sm">อัปโหลดภาพและเริ่มการวิเคราะห์เพื่อดูผลลัพธ์ที่นี่</p>
                 </div>
               )}
             </div>
