@@ -12,22 +12,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 })
     }
 
-    // เตรียม FormData ใหม่เพื่อส่งต่อไปยัง Flask
+    
     const flaskForm = new FormData()
-    // เปลี่ยนชื่อฟิลด์เป็น 'file' ให้ตรงกับ Flask (/predict)
+    
     flaskForm.append("file", image, image.name || "upload.jpg")
 
-    // อ่าน base URL จาก ENV (ฝั่งเซิร์ฟเวอร์อ่านได้ ไม่ต้องใช้ NEXT_PUBLIC)
+    
     const base =
       process.env.FLASK_API_BASE ||
-      process.env.NEXT_PUBLIC_API_BASE || // เผื่อคุณเคยตั้งไว้
+      process.env.NEXT_PUBLIC_API_BASE || 
       "NEXT_PUBLIC_API_URL=https://............/predict"
 
     // ยิงไปยัง Flask
     const res = await fetch(`${base}/predict`, {
       method: "POST",
-      body: flaskForm, // ปล่อยให้ fetch ใส่ boundary เอง
-      // อย่าใส่ headers Content-Type เอง
+      body: flaskForm, 
+      
     })
 
     if (!res.ok) {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Flask error: ${text}` }, { status: res.status })
     }
 
-    // รูปแบบตอบกลับจาก Flask:
+    
     // { predictions: [{label, prob}, ...], meta: {...} }
     const data = await res.json()
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const disease = top?.label ?? "Unknown"
     const confidence = typeof top?.prob === "number" ? top.prob : 0
 
-    // map ความมั่นใจกับ severity ให้เข้ารูปแบบ UI ของคุณ
+    
     const severity =
       disease === "Normal"
         ? ("low" as const)
